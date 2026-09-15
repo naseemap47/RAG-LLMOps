@@ -1,6 +1,10 @@
 embedding_model:
-  provider: "ollama"
-  model_name: "nomic-embed-text:latest"
+  ollama:
+    provider: "ollama"
+    model_name: "nomic-embed-text:latest"
+  google:
+    provider: "google"
+    model_name: "gemini-embedding-001"
 
 retriever:
   top_k: 10
@@ -20,3 +24,9 @@ llm:
     provider: "ollama"
     model_name: "qwen3.5:0.8b"
     temperature: 0
+  
+  google:
+    provider: "google"
+    model_name: "gemini-3.6-flash"
+    temperature: 0
+    max_output_tokens: 2048

@@ -4,6 +4,7 @@ import json
 from dotenv import load_dotenv
 from multi_doc_chat.utils.config_loader import load_config
 from langchain_ollama import OllamaEmbeddings, ChatOllama
+from langchain_google_genai import GoogleGenerativeAIEmbeddings, ChatGoogleGenerativeAI
 from langchain_groq import ChatGroq
 from multi_doc_chat.logger import GLOBAL_LOGGER as log
 from multi_doc_chat.exception.exception import DocumentPortalException
@@ -11,7 +12,7 @@ from multi_doc_chat.exception.exception import DocumentPortalException
 
 
 class ApiKeyManager:
-    REQUIRED_KEYS = ["GROQ_API_KEY"]
+    REQUIRED_KEYS = ["GROQ_API_KEY", "GOOGLE_API_KEY"]
 
     def __init__(self):
         self.api_keys = {}
@@ -72,9 +73,15 @@ class ModelLoader:
         Load and return embedding model from Google Generative AI.
         """
         try:
-            model_name = self.config["embedding_model"]["model_name"]
+            embedding_provider_key = os.getenv("EMBEDDING_PROVIDER", "google")
+            model_name = self.config["embedding_model"][embedding_provider_key]["model_name"]
             log.info("Loading embedding model", model=model_name)
-            return OllamaEmbeddings(model=model_name)
+            if embedding_provider_key == "ollama":
+                return OllamaEmbeddings(model=model_name)
+            elif embedding_provider_key == "google":
+                return GoogleGenerativeAIEmbeddings(google_api_key=self.api_key_mgr.get("GOOGLE_API_KEY"),model=model_name)
+            else:
+                raise ValueError(f"Unsupported embedding provider: {embedding_provider_key}")
         except Exception as e:
             log.error("Error loading embedding model", error=str(e))
             raise DocumentPortalException("Failed to load embedding model", sys)
@@ -112,13 +119,13 @@ class ModelLoader:
                 max_tokens=max_tokens
             )
 
-        # elif provider == "openai":
-        #     return ChatOpenAI(
-        #         model=model_name,
-        #         api_key=self.api_key_mgr.get("OPENAI_API_KEY"),
-        #         temperature=temperature,
-        #         max_tokens=max_tokens
-        #     )
+        elif provider == "google":
+            return ChatGoogleGenerativeAI(
+                model=model_name,
+                api_key=self.api_key_mgr.get("GOOGLE_API_KEY"),
+                temperature=temperature,
+                max_tokens=max_tokens
+            )
 
         else:
             log.error("Unsupported LLM provider", provider=provider)
