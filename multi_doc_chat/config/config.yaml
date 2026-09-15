@@ -1,0 +1,22 @@
+embedding_model:
+  provider: "ollama"
+  model_name: "nomic-embed-text:latest"
+
+retriever:
+  top_k: 10
+  search_type: "mmr"  # Options: "similarity", "mmr", "similarity_score_threshold"
+  # MMR (Maximal Marginal Relevance) parameters for diverse results
+  fetch_k: 20  # Number of documents to fetch before MMR re-ranking (should be > top_k)
+  lambda_mult: 0.5  # Diversity vs relevance (0=max diversity, 1=max relevance)
+
+llm:
+  groq:
+    provider: "groq"
+    model_name: "openai/gpt-oss-20b"
+    temperature: 0
+    max_output_tokens: 2048
+
+  ollama:
+    provider: "ollama"
+    model_name: "qwen3.5:0.8b"
+    temperature: 0
