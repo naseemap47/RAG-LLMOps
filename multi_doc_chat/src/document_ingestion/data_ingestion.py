@@ -90,8 +90,9 @@ class ChatIngestor:
 
             try:
                 vs = fm.load_or_create(texts=texts, metadatas=metas)
-            except Exception:
-                vs = fm.load_or_create(texts=texts, metadatas=metas)
+            except Exception as e:
+                log.error("Failed to load or create FAISS index", error=str(e))
+                raise DocumentPortalException("Failed to load or create FAISS index", e) from e
 
             added = fm.add_documents(chunks)
             log.info("FAISS index updated", added=added, index=str(self.faiss_dir))

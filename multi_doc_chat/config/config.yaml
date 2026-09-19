@@ -22,7 +22,7 @@ llm:
 
   ollama:
     provider: "ollama"
-    model_name: "qwen3.5:0.8b"
+    model_name: "qwen3.5:4b"
     temperature: 0
   
   google:
