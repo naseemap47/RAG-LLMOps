@@ -59,21 +59,20 @@ def home(request: Request) -> HTMLResponse:
     return templates.TemplateResponse(request=request, name="index.html")
 
 @app.post("/upload", response_model=UploadResponse)
-async def upload(file: UploadFile = File(...)) -> UploadResponse:
-    if not file:
-        raise HTTPException(status_code=400, detail="No file uploaded")
+async def upload(files: List[UploadFile] = File(...)) -> UploadResponse:
+    if not files:
+        raise HTTPException(status_code=400, detail="No files uploaded")
 
     try:
         # Wrap FastAPI files to preserve filename/ext and provide a read buffer
-        # wrapped_files = [FastAPIFileAdapter(f) for f in file]
-        wrapped_file = FastAPIFileAdapter(file)
+        wrapped_files = [FastAPIFileAdapter(f) for f in files]
 
         ingestor = ChatIngestor(use_session_dirs=True)
         session_id = ingestor.session_id
 
         # Save, load, split, embed, and write FAISS index with MMR
         ingestor.built_retriver(
-            uploaded_files=[wrapped_file],
+            uploaded_files=wrapped_files,
             search_type="mmr",
             fetch_k=20,
             lambda_mult=0.5
@@ -92,7 +91,6 @@ async def upload(file: UploadFile = File(...)) -> UploadResponse:
 async def chat(req: ChatRequest) -> ChatResponse:
     session_id = req.session_id
     message = req.message.strip()
-    print("SESSIONS:", SESSIONS)
     if not session_id or session_id not in SESSIONS:
         print(f"[ERROR] Session ID: {session_id} not found in sessions: {SESSIONS}")
         raise HTTPException(status_code=400, detail="Invalid or expired session_id. Re-upload documents.")
