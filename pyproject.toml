@@ -18,6 +18,7 @@ dependencies = [
     "langsmith>=0.12.4",
     "pandas>=3.0.5",
     "pypdf>=6.18.1",
+    "pytest>=9.1.1",
     "python-dotenv>=1.2.3",
     "python-multipart>=0.0.32",
     "rapidocr-onnxruntime>=1.4.4",
@@ -25,3 +26,7 @@ dependencies = [
     "tiktoken>=0.14.0",
     "uvicorn>=0.53.0",
 ]
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
+
