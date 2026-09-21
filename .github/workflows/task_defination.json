@@ -1,0 +1,48 @@
+{
+    "family": "ragllmopstd",
+    "networkMode": "awsvpc",
+    "executionRoleArn": "arn:aws:iam::675962430891:role/ecsTaskExecutionRole",
+    "requiresCompatibilities": ["FARGATE"],
+    "cpu": "1024",
+    "memory": "8192",
+    "containerDefinitions": [
+      {
+        "name": "rag-llmops-container",
+        "image": "675962430891.dkr.ecr.ap-southeast-2.amazonaws.com/rag-llmops",
+        "cpu": 1024,
+        "essential": true,
+        "portMappings": [
+          {
+            "containerPort": 8080,
+            "hostPort": 8080,
+            "protocol": "tcp",
+            "name": "rag-llmops-container-8080-tcp",
+            "appProtocol": "http"
+          }
+        ],
+        "environment": [
+          {
+            "name": "ENV",
+            "value": "production"
+          }
+        ],
+        "secrets": [
+          {
+            "name": "apikeyragllmops",
+            "valueFrom": "arn:aws:secretsmanager:ap-southeast-2:675962430891:secret:apikeyragllmops-pMbCAJ"
+          }
+  
+        ],
+        "logConfiguration": {
+          "logDriver": "awslogs",
+          "options": {
+            "awslogs-group": "/ecs/llmopstdlive",
+            "awslogs-region": "us-east-1",
+            "awslogs-stream-prefix": "ecs",
+            "awslogs-create-group": "true"
+          }
+        }
+      }
+    ]
+  }
+  
