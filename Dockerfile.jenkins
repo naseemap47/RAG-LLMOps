@@ -2,7 +2,7 @@ FROM jenkins/jenkins:lts
 
 USER root
 
-# Install Python and dependencies
+# Install Python 3 and dependencies
 RUN apt-get update && \\
     apt-get install -y \\
     python3 \\
@@ -17,8 +17,6 @@ RUN apt-get update && \\
     sudo \\
     && rm -rf /var/lib/apt/lists/*
 
-# Install Azure CLI
-RUN curl -sL <https://aka.ms/InstallAzureCLIDeb> | bash
 
 # Install AWS CLI v2
 RUN curl -sSL "<https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip>" -o "/tmp/awscliv2.zip" && \\
@@ -54,4 +52,3 @@ RUN groupadd -f docker && \\
 # Don't switch user - run as root to access Docker socket
 # Jenkins will run as root but that's acceptable in a container environment
 USER root
-
