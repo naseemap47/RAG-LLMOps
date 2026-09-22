@@ -2,26 +2,39 @@ FROM jenkins/jenkins:lts
 
 USER root
 
-# Install Python 3 and dependencies
-RUN apt-get update && \
-    apt-get install -y \
-    python3 \
-    python3-pip \
-    python3-venv \
-    git \
-    curl \
-    ca-certificates \
-    lsb-release \
-    gnupg \
+# Install Python and dependencies
+RUN apt-get update && \\
+    apt-get install -y \\
+    python3 \\
+    python3-pip \\
+    python3-venv \\
+    git \\
+    curl \\
+    unzip \\
+    ca-certificates \\
+    lsb-release \\
+    gnupg \\
+    sudo \\
     && rm -rf /var/lib/apt/lists/*
 
 # Install Azure CLI
-RUN curl -sL https://aka.ms/InstallAzureCLIDeb | bash
+RUN curl -sL <https://aka.ms/InstallAzureCLIDeb> | bash
+
+# Install AWS CLI v2
+RUN curl -sSL "<https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip>" -o "/tmp/awscliv2.zip" && \\
+    unzip -q /tmp/awscliv2.zip -d /tmp && \\
+    /tmp/aws/install && \\
+    rm -rf /tmp/aws /tmp/awscliv2.zip
 
 # Install Docker CLI (for building images in Jenkins)
-RUN apt-get update && \
-    apt-get install -y docker.io && \
+RUN apt-get update && \\
+    apt-get install -y docker.io && \\
     rm -rf /var/lib/apt/lists/*
+
+# Install kubectl
+RUN curl -LO "<https://dl.k8s.io/release/$>(curl -L -s <https://dl.k8s.io/release/stable.txt>)/bin/linux/amd64/kubectl" && \\
+    chmod +x kubectl && \\
+    mv kubectl /usr/local/bin/kubectl
 
 # Create symbolic link for python command
 RUN ln -s /usr/bin/python3 /usr/bin/python
@@ -32,5 +45,13 @@ RUN jenkins-plugin-cli --plugins "git workflow-aggregator junit github-branch-so
 # Configure git to allow all directories (fixes dubious ownership errors in Jenkins)
 RUN git config --system --add safe.directory '*'
 
-# Switch back to jenkins user
-USER jenkins
+# Add jenkins user to docker group and root group for Docker socket access
+# On macOS/Docker Desktop, the socket is owned by root:root (GID 0)
+RUN groupadd -f docker && \\
+    usermod -aG docker,root jenkins && \\
+    echo "jenkins ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers
+
+# Don't switch user - run as root to access Docker socket
+# Jenkins will run as root but that's acceptable in a container environment
+USER root
+
