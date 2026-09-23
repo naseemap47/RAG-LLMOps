@@ -26,7 +26,7 @@ pipeline {
         
         // Cluster Configuration
         CLUSTER_NAME = 'multi-doc-chat-cluster'
-        NODE_INSTANCE_TYPE = 't3.medium'
+        NODE_INSTANCE_TYPE = "${env.NODE_INSTANCE_TYPE ?: 't3.small'}"
         DESIRED_CAPACITY = '2'
         MIN_SIZE = '1'
         MAX_SIZE = '3'
