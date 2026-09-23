@@ -167,7 +167,6 @@ Resources:
               - sts:AssumeRole
       ManagedPolicyArns:
         - arn:aws:iam::aws:policy/AmazonEKSClusterPolicy
-        - arn:aws:iam::aws:policy/AmazonEKSServicePolicy
       Tags:
         - Key: Name
           Value: !Sub '${ClusterName}-cluster-role'
@@ -217,7 +216,7 @@ Resources:
       - PublicSubnet2
     Properties:
       Name: !Ref ClusterName
-      Version: '1.28'
+      Version: '1.30'
       RoleArn: !GetAtt EKSClusterRole.Arn
       ResourcesVpcConfig:
         SecurityGroupIds:
