@@ -216,7 +216,7 @@ Resources:
       - PublicSubnet2
     Properties:
       Name: !Ref ClusterName
-      Version: '1.30'
+      Version: '1.36'
       RoleArn: !GetAtt EKSClusterRole.Arn
       ResourcesVpcConfig:
         SecurityGroupIds:
