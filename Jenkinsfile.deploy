@@ -15,16 +15,16 @@ pipeline {
     
     environment {
         // AWS Configuration
-        AWS_REGION = "${env.AWS_REGION ?: 'us-east-1'}"
+        AWS_REGION = "${env.AWS_REGION ?: 'ap-southeast-2'}"
         AWS_ACCESS_KEY_ID = "${env.AWS_ACCESS_KEY_ID}"
         AWS_SECRET_ACCESS_KEY = "${env.AWS_SECRET_ACCESS_KEY}"
         
         // EKS Configuration
-        EKS_CLUSTER_NAME = "${env.EKS_CLUSTER_NAME ?: 'multi-doc-chat-live-cluster'}"
+        EKS_CLUSTER_NAME = "${env.EKS_CLUSTER_NAME ?: 'multi-doc-chat-cluster'}"
         
         // ECR Configuration
         ECR_REGISTRY = "${env.ECR_REGISTRY}"  // Format: account-id.dkr.ecr.region.amazonaws.com
-        ECR_REPOSITORY = "${env.ECR_REPOSITORY ?: 'multi-doc-chat-live'}"
+        ECR_REPOSITORY = "${env.ECR_REPOSITORY ?: 'multi-doc-chat'}"
         
         // Application Secrets
         GROQ_API_KEY = "${env.GROQ_API_KEY ?: ''}"
@@ -363,15 +363,15 @@ pipeline {
                         set -e
                         
                         # Check if deployment exists
-                        if kubectl get deployment multi-doc-chat-live 2>/dev/null; then
+                        if kubectl get deployment multi-doc-chat 2>/dev/null; then
                             echo "Found existing deployment, checking status..."
                             
                             # Get current status
-                            kubectl get deployment multi-doc-chat-live
-                            kubectl get pods -l app=multi-doc-chat-live
+                            kubectl get deployment multi-doc-chat
+                            kubectl get pods -l app=multi-doc-chat
                             
                             # Check for ImagePullBackOff pods
-                            FAILED_PODS=$(kubectl get pods -l app=multi-doc-chat-live --field-selector=status.phase!=Running -o name 2>/dev/null || echo "")
+                            FAILED_PODS=$(kubectl get pods -l app=multi-doc-chat --field-selector=status.phase!=Running -o name 2>/dev/null || echo "")
                             
                             if [ -n "${FAILED_PODS}" ]; then
                                 echo ""
@@ -381,10 +381,10 @@ pipeline {
                                 
                                 echo ""
                                 echo "Deleting existing deployment to start fresh..."
-                                kubectl delete deployment multi-doc-chat-live
+                                kubectl delete deployment multi-doc-chat
                                 
                                 echo "Waiting for pods to terminate..."
-                                kubectl wait --for=delete pod -l app=multi-doc-chat-live --timeout=60s || true
+                                kubectl wait --for=delete pod -l app=multi-doc-chat --timeout=60s || true
                                 
                                 echo "✅ Old deployment cleaned up"
                             else
@@ -406,7 +406,7 @@ pipeline {
                         set -e
                         
                         # Create secret with API keys
-                        kubectl create secret generic multi-doc-chat-live-secrets \
+                        kubectl create secret generic multi-doc-chat-secrets \
                             --from-literal=GROQ_API_KEY="${GROQ_API_KEY}" \
                             --from-literal=OPENAI_API_KEY="${OPENAI_API_KEY}" \
                             --from-literal=GOOGLE_API_KEY="${GOOGLE_API_KEY}" \
@@ -415,7 +415,7 @@ pipeline {
                         echo "✅ Application secrets created/updated successfully"
                         
                         # Verify secret exists
-                        kubectl get secret multi-doc-chat-live-secrets
+                        kubectl get secret multi-doc-chat-secrets
                         
                         echo ""
                         echo "Creating ECR registry secret as backup authentication method..."
@@ -480,8 +480,8 @@ pipeline {
                         set -e
                         
                         # Update deployment with new image tag
-                        kubectl set image deployment/multi-doc-chat-live \
-                            multi-doc-chat-live=${ECR_REGISTRY}/${ECR_REPOSITORY}:${IMAGE_TAG} \
+                        kubectl set image deployment/multi-doc-chat \
+                            multi-doc-chat=${ECR_REGISTRY}/${ECR_REPOSITORY}:${IMAGE_TAG} \
                             --record
                         
                         echo "✅ Deployment image updated to: ${IMAGE_TAG}"
@@ -507,13 +507,13 @@ pipeline {
                         
                         while [ $ELAPSED -lt $TIMEOUT ]; do
                             # Get deployment status
-                            READY=$(kubectl get deployment multi-doc-chat-live -o jsonpath='{.status.readyReplicas}' 2>/dev/null || echo "0")
-                            DESIRED=$(kubectl get deployment multi-doc-chat-live -o jsonpath='{.spec.replicas}' 2>/dev/null || echo "0")
+                            READY=$(kubectl get deployment multi-doc-chat -o jsonpath='{.status.readyReplicas}' 2>/dev/null || echo "0")
+                            DESIRED=$(kubectl get deployment multi-doc-chat -o jsonpath='{.spec.replicas}' 2>/dev/null || echo "0")
                             
                             echo "Status: ${READY}/${DESIRED} replicas ready"
                             
                             # Check for ImagePullBackOff
-                            FAILED_PODS=$(kubectl get pods -l app=multi-doc-chat-live -o jsonpath='{range .items[?(@.status.phase!="Running")]}{.metadata.name}{" "}{.status.containerStatuses[0].state.waiting.reason}{"\n"}{end}' 2>/dev/null || echo "")
+                            FAILED_PODS=$(kubectl get pods -l app=multi-doc-chat -o jsonpath='{range .items[?(@.status.phase!="Running")]}{.metadata.name}{" "}{.status.containerStatuses[0].state.waiting.reason}{"\n"}{end}' 2>/dev/null || echo "")
                             
                             if echo "${FAILED_PODS}" | grep -qE "ImagePullBackOff|ErrImagePull"; then
                                 echo ""
@@ -523,7 +523,7 @@ pipeline {
                                 echo "${FAILED_PODS}"
                                 echo ""
                                 echo "Describing a failed pod for more details:"
-                                FAILED_POD=$(kubectl get pods -l app=multi-doc-chat-live -o jsonpath='{.items[?(@.status.phase!="Running")].metadata.name}' | awk '{print $1}')
+                                FAILED_POD=$(kubectl get pods -l app=multi-doc-chat -o jsonpath='{.items[?(@.status.phase!="Running")].metadata.name}' | awk '{print $1}')
                                 kubectl describe pod ${FAILED_POD}
                                 echo ""
                                 echo "Pod events:"
@@ -535,7 +535,7 @@ pipeline {
                             if [ "${READY}" = "${DESIRED}" ] && [ "${READY}" != "0" ]; then
                                 echo ""
                                 echo "✅ Rollout completed successfully!"
-                                kubectl get pods -l app=multi-doc-chat-live -o wide
+                                kubectl get pods -l app=multi-doc-chat -o wide
                                 exit 0
                             fi
                             
@@ -547,8 +547,8 @@ pipeline {
                         echo "❌ Rollout timed out after ${TIMEOUT} seconds"
                         echo ""
                         echo "Current status:"
-                        kubectl get deployment multi-doc-chat-live
-                        kubectl get pods -l app=multi-doc-chat-live
+                        kubectl get deployment multi-doc-chat
+                        kubectl get pods -l app=multi-doc-chat
                         exit 1
                     '''
                 }
@@ -566,13 +566,13 @@ pipeline {
                         echo "======================================"
                         echo "Deployment Status:"
                         echo "======================================"
-                        kubectl get deployment multi-doc-chat-live
+                        kubectl get deployment multi-doc-chat
                         
                         echo ""
                         echo "======================================"
                         echo "Pods:"
                         echo "======================================"
-                        kubectl get pods -l app=multi-doc-chat-live -o wide
+                        kubectl get pods -l app=multi-doc-chat -o wide
                         
                         echo ""
                         echo "======================================"
@@ -680,10 +680,10 @@ pipeline {
                     echo "   kubectl get svc multi-doc-chat-service"
                     echo ""
                     echo "2. View logs:"
-                    echo "   kubectl logs -l app=multi-doc-chat-live -f"
+                    echo "   kubectl logs -l app=multi-doc-chat -f"
                     echo ""
                     echo "3. Check pods:"
-                    echo "   kubectl get pods -l app=multi-doc-chat-live"
+                    echo "   kubectl get pods -l app=multi-doc-chat"
                     echo ""
                 '''
             }
@@ -698,19 +698,19 @@ pipeline {
                     echo "======================================"
                     echo "Deployment Events (last 10):"
                     echo "======================================"
-                    kubectl describe deployment multi-doc-chat-live | tail -20 || true
+                    kubectl describe deployment multi-doc-chat | tail -20 || true
                     
                     echo ""
                     echo "======================================"
                     echo "Pod Status:"
                     echo "======================================"
-                    kubectl get pods -l app=multi-doc-chat-live || true
+                    kubectl get pods -l app=multi-doc-chat || true
                     
                     echo ""
                     echo "======================================"
                     echo "Pod Logs:"
                     echo "======================================"
-                    kubectl logs -l app=multi-doc-chat-live --tail=50 || true
+                    kubectl logs -l app=multi-doc-chat --tail=50 || true
                 '''
             }
         }
